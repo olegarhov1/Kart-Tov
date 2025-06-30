@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Конструктор карточки товара</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="/manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --glass-bg: rgba(34, 34, 34, 0.65);
+      --glass-blur: 18px;
+      --accent: #2a7cff;
+      --accent-hover: #1856b3;
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+      --radius: 22px;
+      --panel-width: 340px;
+      --canvas-max: 800px;
+      --font-main: 'Inter', 'Segoe UI', Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+      --transition: 0.18s cubic-bezier(.4,0,.2,1);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --glass-bg: rgba(255,255,255,0.75);
+        --border: rgba(0,0,0,0.08);
+        --shadow: 0 8px 32px 0 rgba(0,0,0,0.10);
+        --accent: #2a7cff;
+        --accent-hover: #1856b3;
+      }
+      body { color: #222; }
+    }
+    body {
+      margin: 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: #f6f7fa;
+    }
+.main-layout {
+  display: flex;
+  height: 100vh;
+}
+.side-panel {
+  width: 340px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-shadow: 2px 0 8px #0001;
+  z-index: 2;
+}
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f6f7fa;
+}
+.tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn.active {
+  background: #fff;
+  border-bottom: 2px solid #1976d2;
+  color: #1976d2;
+}
+.tab-content {
+  display: none;
+  padding: 18px 18px 0 18px;
+  flex: 1;
+  overflow-y: auto;
+}
+.tab-content.active {
+  display: block;
+}
+.upload-btn {
+  display: block;
+  background: #1976d2;
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.upload-btn:hover {
+  background: #1256a2;
+}
+#thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.batch-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f6f7fa;
+  border-radius: 8px;
+  padding: 4px 8px;
+  transition: border 0.2s;
+}
+.batch-item .color-circle {
+  margin-left: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px #1976d2;
+}
+.color-select-row, .form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+.color-select-row label, .form-row label {
+  min-width: 70px;
+  font-weight: 500;
+}
+.color-select-row select, .form-row select, .form-row input[type="text"] {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+.color-select-row button, .form-row button {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.color-select-row button:hover, .form-row button:hover {
+  background: #1256a2;
+}
+.main-action-btn {
+  margin: 18px;
+  padding: 14px 0;
+  background: #43a047;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.main-action-btn:hover {
+  background: #2e7031;
+}
+.canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f6f7fa;
+  position: relative;
+}
+#product-canvas {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px #0002;
+  margin: 32px 0 0 0;
+  display: block;
+  width: 900px;
+  height: 600px;
+  max-width: 100%;
+  max-height: 80vh;
+}
+.canvas-controls {
+  display: flex;
+  gap: 24px;
+  margin: 18px 0 0 0;
+  align-items: center;
+  justify-content: center;
+}
+.canvas-controls label {
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+input[type="range"] {
+  accent-color: #1976d2;
+  width: 90px;
+}
+input[type="color"] {
+  border: none;
+  background: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 1.5px #1976d2;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  background: #f6f7fa;
+}
+::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+    .main-flex {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      gap: 32px;
+      padding: 40px 0;
+    }
+    .glass-panel {
+      background: var(--glass-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1.5px solid var(--border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      padding: 32px 28px 28px 28px;
+      min-width: 260px;
+      max-width: var(--panel-width);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: background var(--transition), box-shadow var(--transition);
+      position: relative;
+      z-index: 2;
+    }
+    .glass-panel h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--accent);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .glass-panel label {
+      display: flex;
+      flex-direction: column;
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0;
+      gap: 4px;
+      color: inherit;
+    }
+    .glass-panel input[type=text], .glass-panel select, .glass-panel input[type=color] {
+      margin-bottom: 0;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-size: 1rem;
+      font-family: inherit;
+      background: rgba(255,255,255,0.08);
+      color: inherit;
+      outline: none;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .glass-panel input[type=text]:focus, .glass-panel select:focus {
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.16);
+    }
+    .glass-panel input[type=color] {
+      width: 38px; height: 38px; padding: 0; border: none; background: none;
+    }
+    .glass-panel input[type=file] { margin-bottom: 0; }
+    .glass-panel .row { display: flex; gap: 10px; width: 100%; }
+    .glass-panel .row > * { flex: 1; }
+    .bottom-part-block {
+      background: rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .bottom-part-block label { font-size: 0.97rem; }
+    .font-row, .font-upload-row {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+    }
+    .font-row label, .font-upload-row label { flex: 1; margin-bottom: 0; }
+    .font-row input[type=range] { width: 100px; }
+    .save-btn {
+      margin-top: 10px;
+      padding: 12px 0;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 12px 0 rgba(42,124,255,0.10);
+      transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+      letter-spacing: 0.03em;
+    }
+    .save-btn:hover { background: var(--accent-hover); transform: translateY(-2px) scale(1.03);}
+    #canvas-wrap {
+      max-width: var(--canvas-max);
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: rgba(17,17,17,0.92);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
+      border: 2px solid var(--border);
+      transition: box-shadow var(--transition);
+      max-width: 100%;
+      height: auto;
+    }
+    .icon {
+      width: 1.1em; height: 1.1em; vertical-align: -0.15em; margin-right: 0.3em; opacity: 0.7;
+    }
+    .batch-list {
+      margin: 10px 0 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .batch-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .batch-item img {
+      width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1.5px solid #444;
+    }
+    .batch-item select {
+      min-width: 100px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1.5px solid #444;
+      background: #fff;
+      color: #111;
+      font-weight: 600;
+      padding: 3px 8px;
+    }
+    .batch-item .color-circle {
+      display: inline-block;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #444;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @media (max-width: 1200px) {
+      .main-flex { flex-direction: column; align-items: center; gap: 18px; }
+      .glass-panel { max-width: 98vw; min-width: 0; width: 98vw; }
+      #canvas-wrap { width: 98vw; }
+    }
+    @media (max-width: 700px) {
+      .main-flex { padding: 10px 0; }
+      .glass-panel { padding: 18px 8px 14px 8px; }
+      #canvas-wrap { min-width: 0; }
+    }
+
+
+
+    .modal {
+  position: fixed;
+  z-index: 10000;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(34,34,34,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modal-fade-in 0.2s;
+}
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
+  padding: 32px 28px 24px 28px;
+  min-width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+.modal-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1976d2;
+}
+.modal-content label {
+  display: flex;
+  flex-direction: column;
+  font-size: 1rem;
+  font-weight: 500;
+  gap: 4px;
+  color: #222;
+}
+.modal-content input[type="text"] {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #f6f7fa;
+  color: #222;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.modal-content input[type="text"]:focus {
+  border-color: #1976d2;
+}
+.modal-content input[type="color"] {
+  width: 38px; height: 38px; padding: 0; border: none; background: none;
+}
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.modal-save {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.modal-save:hover { background: #1256a2; }
+.modal-cancel {
+  background: #eee;
+  color: #222;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.modal-cancel:hover { background: #ccc; }
+  </style>
+<body>
+  <div class="main-layout">
+    <aside class="side-panel">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="photo"><span>📷</span> Фото</button>
+        <button class="tab-btn" data-tab="text"><span>📝</span> Текст</button>
+        <button class="tab-btn" data-tab="style"><span>🎨</span> Оформление</button>
+      </div>
+      <div class="tab-content active" id="tab-photo">
+        <label class="upload-btn">
+          <input type="file" id="product-photo-upload" multiple accept="image/*" hidden>
+          <span>+ Загрузить фото</span>
+        </label>
+        <div id="thumbnails"></div>
+        <div class="color-select-row">
+          <label>Цвет:</label>
+          <select id="color-input"></select>
+          <button id="add-color-btn" title="Добавить цвет">+</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-text">
+        <div class="form-row">
+          <label>Бренд:</label>
+          <select id="brand-input"></select>
+          <button id="add-brand-btn" title="Добавить бренд">+</button>
+        </div>
+        <div class="form-row">
+          <label>Категория:</label>
+          <select id="category-input"></select>
+          <button id="add-category-btn" title="Добавить категорию">+</button>
+        </div>
+        <div class="form-row">
+          <label>Ткань:</label>
+          <select id="fabric-input"></select>
+          <button id="add-fabric-btn" title="Добавить ткань">+</button>
+        </div>
+        <div class="form-row">
+          <label>Размер:</label>
+          <select id="size-type-input">
+            <option value="норма">Норма</option>
+            <option value="батал">Батал</option>
+            <option value="oversize">Oversize</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Артикул:</label>
+          <input id="sku-input" type="text" maxlength="32">
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" id="fabric-toggle" checked> Показывать ткань</label>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-style">
+        <div class="form-row">
+          <label>Шрифт:</label>
+          <select id="font-family-input">
+            <option value="Arial">Arial</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Roboto">Roboto</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Размер шрифта:</label>
+          <input id="font-size-input" type="range" min="16" max="48" value="24">
+          <span id="font-size-value">24</span>
+        </div>
+        <div class="form-row">
+          <label>Цвет текста:</label>
+          <input id="color-text-input" type="color" value="#222222">
+        </div>
+        <div class="form-row">
+          <label>Обводка:</label>
+          <input id="stroke-width-input" type="range" min="0" max="8" value="0">
+          <span id="stroke-width-value">0</span>
+          <input id="stroke-color-input" type="color" value="#ffffff">
+        </div>
+        <div class="form-row">
+          <label>Межстрочный:</label>
+          <input id="line-height-input" type="range" min="0" max="32" value="8">
+          <span id="line-height-value">8</span>
+        </div>
+        <div class="form-row">
+          <label>Размер круга:</label>
+          <input id="circle-size-input" type="range" min="10" max="40" value="22">
+          <span id="circle-size-value">22</span>
+        </div>
+        <div class="form-row">
+          <label>Смещение круга:</label>
+          <input id="color-circle-offset-input" type="range" min="-50" max="50" value="0">
+          <span id="color-circle-offset-value">0</span>
+        </div>
+        <div class="form-row">
+          <label>Смещение X круга:</label>
+          <input id="color-circle-xoffset-input" type="range" min="-50" max="50" value="0">
+          <span id="color-circle-xoffset-value">0</span>
+        </div>
+        <div class="form-row">
+          <label>Затемнение фона:</label>
+          <input id="bg-darken-input" type="range" min="0" max="100" value="0">
+          <span id="bg-darken-value">0</span>
+        </div>
+        <div class="form-row">
+          <select id="bg-select"></select>
+<button id="add-bg-btn">Добавить фон</button>
+        </div>
+        <div class="form-row">
+          <label>Выравнивание:</label>
+          <select id="text-align-input">
+            <option value="left">Слева</option>
+            <option value="center">По центру</option>
+            <option value="right">Справа</option>
+          </select>
+        </div>
+      </div>
+      <button id="save-btn" class="main-action-btn">💾 Скачать все</button>
+      <div class="export-import-row">
+        <button id="export-btn" class="main-action-btn export-btn" style="background:#1976d2;">⬇️ Экспорт</button>
+        <button id="import-btn" class="main-action-btn import-btn" style="background:#ff9800;">⬆️ Импорт</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;">
+      </div>
+    </aside>
+
+    <main class="canvas-area">
+      <div style="margin-bottom:12px;">
+        <label>
+          <input type="radio" name="canvas-format" value="9:16" checked> 9:16 (TikTok)
+        </label>
+        <label style="margin-left:18px;">
+          <input type="radio" name="canvas-format" value="1:1"> 1:1 (Instagram)
+        </label>
+      </div>
+
+     <canvas id="product-canvas" width="900" height="1600" style="width: 300px; height: 533px; background: #fff; border-radius: 24px; box-shadow: 0 0 24px #0002;"></canvas>
+
+      <div style="margin-top:16px;">
+        <label>Масштаб: <input id="product-scale-input" type="range" min="10" max="200" value="92"><span id="product-scale-value">92</span></label>
+        <label>X: <input id="product-x-input" type="number" min="-500" max="500" value="0"><span id="product-x-value">0</span></label>
+        <label>Y: <input id="product-y-input" type="number" min="-500" max="500" value="0"><span id="product-y-value">0</span></label>
+      </div>
+    </main>
+  </div>
+
+  <!-- Модальное окно: Добавить цвет -->
+  <div class="modal" id="add-color-form" style="display:none;">
+    <div class="modal-content">
+      <h3>Добавить новый цвет</h3>
+      <label>Название цвета:
+        <input type="text" id="new-color-name" maxlength="32">
+      </label>
+      <label>HEX:
+        <input type="color" id="new-color-hex" value="#ffffff">
+        <input type="text" id="new-color-hex-text" maxlength="7" value="#ffffff" style="width:80px;">
+      </label>
+      <div class="modal-actions">
+        <button id="save-color-btn" class="modal-save">Сохранить</button>
+        <button id="cancel-color-btn" class="modal-cancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+<!-- Модальное окно: Добавить бренд -->
+<div class="modal" id="add-brand-form" style="display:none;">
+  <div class="modal-content">
+    <h3>Добавить новый бренд</h3>
+    <label>Название бренда:
+      <input type="text" id="new-brand-name" maxlength="32">
+    </label>
+    <div class="modal-actions">
+      <button id="save-brand-btn" class="modal-save">Сохранить</button>
+      <button id="cancel-brand-btn" class="modal-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно: Добавить категорию -->
+<div class="modal" id="add-category-form" style="display:none;">
+  <div class="modal-content">
+    <h3>Добавить новую категорию</h3>
+    <label>Название категории:
+      <input type="text" id="new-category-name" maxlength="32">
+    </label>
+    <div class="modal-actions">
+      <button id="save-category-btn" class="modal-save">Сохранить</button>
+      <button id="cancel-category-btn" class="modal-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно: Добавить ткань -->
+<div class="modal" id="add-fabric-form" style="display:none;">
+  <div class="modal-content">
+    <h3>Добавить новую ткань</h3>
+    <label>Название ткани:
+      <input type="text" id="new-fabric-name" maxlength="32">
+    </label>
+    <div class="modal-actions">
+      <button id="save-fabric-btn" class="modal-save">Сохранить</button>
+      <button id="cancel-fabric-btn" class="modal-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+  <script>
+    // --- Скрипт для работы вкладок (табы) ---
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// 🔄 Обновлённая drawProductCard с логотипом
+// 🔁 Предварительно загруженные логотипы
+const brandLogoURLs = {
+  "Nike": "/logos/nike.png",
+  "Adidas": "/logos/adidas.png",
+  "Puma": "/logos/puma.png",
+  "Reebok": "/logos/reebok.png",
+  "Boss": "/logos/boss.png",
+  "Armani": "/logos/armani.png",
+  "The North Face": "/logos/tnf.png",
+  "Karl Lagerfeld": "/logos/karl.png",
+  "Under Armour": "/logos/ua.png",
+  "Calvin-Klein": "/logos/ck.png",
+  "Prada": "/logos/prada.png"
+};
+const loadedBrandLogos = {};
+
+function preloadBrandLogos() {
+  const entries = Object.entries(brandLogoURLs);
+  return Promise.all(entries.map(([brand, url]) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        loadedBrandLogos[brand] = img;
+        resolve();
+      };
+      img.onerror = () => resolve(); // fail silently
+      img.src = url;
+    });
+  }));
+}
+
+
+
+// --- Дефолтные списки ---
+const defaultColors = {
+  "White": "#fff", "Brown-grey": "#8d7662", "Orange": "#ff9800", "Black 05": "#222",
+  "Grey": "#bdbdbd", "Blue 5": "#2a6cff", "Blue 18": "#1e3a8a", "Lite-blue": "#b3d8f7",
+  "Green": "#2ecc40", "Lite-green": "#b6e7b0", "Antracit 2": "#444", "Melange": "#cfcfcf",
+  "Aquamarine": "#7fffd4", "Beige": "#f5f5dc", "Red": "#e53935", "Graphite": "#555",
+  "Yellow": "#ffe600", "Mentol": "#b2f9e2", "Mustard": "#ffd34e", "Khaki": "#7a8450",
+  "Grenadine": "#DC343B", "Ultra Marine": "#3F6BAA", "Blue 23": "#1C4E80", "Green Apple": "#8DB600",
+  "Coffee": "#6F4E37", "Terracot": "#E2725B", "Powder": "#F3E5AB", "Light Green": "#B2D732",
+  "Dark Blue": "#222E50", "Jeans": "#3A5F81"
+};
+const defaultBrands = {"Nike": "","Adidas": "","Puma": "","Reebok": "","Boss": "","Armani": "","The North Face": "","Karl Lagerfeld": "","Under Armour": "","Calvin-Klein": "","Prada": ""};
+const defaultCategories = {"Футболка": "","Борцівка": "","Худи": "","Свитшот": "","Кофта с капюшоном": "","Кофта без капюшона": "","Шорты": "","Штаны манжет": "","Штаны прямые": "","Костюмы": ""};
+const defaultFabrics = {"2 нитки": "","3 нитки": "","Рібана": "","Петля": "","Лакоста": ""};
+
+const colorUaMap = {
+  "White": "White", "Black 05": "Black 05", "Grey": "Grey", "Blue 5": "Blue 5", "Red": "Red",
+  "Green": "Green", "Yellow": "Yellow", "Brown-grey": "Brown-grey", "Orange": "Orange",
+  "Lite-blue": "Lite-blue", "Lite-green": "Lite-green", "Beige": "Beige", "Jeans": "Jeans"
+};
+function getColorUa(name) {
+  return colorUaMap[name] || name;
+}
+
+// --- Фоны (можешь добавить свои) ---
+const backgrounds = [
+  // Простые цвета
+  {name: "Без фона", value: ""},
+  {name: "Белый", value: "#ffffff"},
+  {name: "Чёрный", value: "#000000"},
+  {name: "Серый", value: "#e0e0e0"},
+  {name: "Бежевый", value: "#f5f5dc"},
+  {name: "Голубой", value: "#b3d8f7"},
+  {name: "Желтый", value: "#fff9c4"},
+  {name: "Розовый", value: "#ffe0f0"},
+  {name: "Красный", value: "#ffcccc"},
+  {name: "Оранжевый", value: "#ffe5b4"},
+  {name: "Светло-зелёный", value: "#d0f0c0"},
+  {name: "Мятный", value: "#c1f0f6"},
+  {name: "Лавандовый", value: "#e6e6fa"},
+  {name: "Пастельно-фиолетовый", value: "#d8bfd8"},
+  {name: "Песочный", value: "#f4a460"},
+  {name: "Светло-коричневый", value: "#d2b48c"},
+
+
+  // Градиенты
+  {name: "Градиент: Сине-фиолетовый", value: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)"},
+  {name: "Градиент: Закат", value: "linear-gradient(120deg, #f6d365 0%, #fda085 100%)"},
+  {name: "Градиент: Морская волна", value: "linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)"},
+  {name: "Градиент: Мята и лиловый", value: "linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)"},
+  {name: "Градиент: Ночное небо", value: "linear-gradient(to right, #434343, #000000)"},
+  { name: 'Градиент: Синий → Чёрный', value: 'linear-gradient(to right, #0f2027, #203a43)' },
+  { name: 'Градиент: Красный → Чёрный', value: 'linear-gradient(to right, #cb2d3e, #ef473a)' },
+  { name: 'Градиент: Фиолет → Синий', value: 'linear-gradient(to right, #4b6cb7, #182848)' },
+  { name: 'Градиент: Уголь → Лайм', value: 'linear-gradient(to right, #232526, #414345)' },
+  { name: 'Градиент: Темный металлик', value: 'linear-gradient(to right, #485563, #29323c)' },
+  { name: 'Градиент: Хаки → Чёрный', value: 'linear-gradient(to right, #283E51, #485563)' },
+  { name: 'Градиент: Серый дым → Белый', value: 'linear-gradient(to right, #bdc3c7, #2c3e50)' },
+  { name: 'Градиент: Электрик → Пурпур', value: 'linear-gradient(to right, #6a11cb, #2575fc)' },
+  { name: 'Градиент: Графит → Бордо', value: 'linear-gradient(to right, #2c3e50, #4ca1af)' },
+  { name: 'Градиент: Зелёный спорт', value: 'linear-gradient(to right, #11998e, #38ef7d)' },
+  { name: 'Градиент: Тренажёрный зал', value: 'linear-gradient(to right, #000428, #004e92)' },
+  // Весна
+{ name: "Градиент: Весенний рассвет", value: "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)" },
+{ name: "Градиент: Тёплая сирень", value: "linear-gradient(135deg, #d9afd9 0%, #97d9e1 100%)" },
+{ name: "Градиент: Нежный пион", value: "linear-gradient(135deg, #ffdde1 0%, #ee9ca7 100%)" },
+
+// Лето
+{ name: "Градиент: Персик на пляже", value: "linear-gradient(135deg, #f6d365 0%, #fda085 100%)" },
+{ name: "Градиент: Морская соль", value: "linear-gradient(135deg, #e0f7fa 0%, #80deea 100%)" },
+{ name: "Градиент: Кокос и лайм", value: "linear-gradient(135deg, #f0fff3 0%, #c1fcd3 100%)" },
+
+// Осень
+{ name: "Градиент: Тыквенный латте", value: "linear-gradient(135deg, #ffe0c3 0%, #ffcda3 100%)" },
+{ name: "Градиент: Золотой клён", value: "linear-gradient(135deg, #f6e6b4 0%, #f4d03f 100%)" },
+{ name: "Градиент: Вино и кашемир", value: "linear-gradient(135deg, #c33764 0%, #1d2671 100%)" },
+
+// Зима
+{ name: "Градиент: Холодный лёд", value: "linear-gradient(135deg, #dfe9f3 0%, #ffffff 100%)" },
+{ name: "Градиент: Туман и сталь", value: "linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%)" },
+{ name: "Градиент: Мятный снег", value: "linear-gradient(135deg, #e0fff9 0%, #c6f0ec 100%)" },
+
+// Мода и спорт
+{ name: "Градиент: Karl Lagerfeld Soft", value: "linear-gradient(135deg, #f8f8f8 0%, #e3e3e3 100%)" },
+{ name: "Градиент: Nike Pastel Air", value: "linear-gradient(135deg, #dfe9f3 0%, #ffffff 100%)" },
+{ name: "Градиент: Adidas Peach Cloud", value: "linear-gradient(135deg, #ffe0e0 0%, #fad0c4 100%)" },
+{ name: "Градиент: Hugo Boss Chill", value: "linear-gradient(135deg, #f0f0f0 0%, #c2c2c2 100%)" },
+{ name: "Градиент: Armani Soft Night", value: "linear-gradient(135deg, #757f9a 0%, #d7dde8 100%)" },
+
+// Универсальные стильные
+{ name: "Градиент: Пудра и сталь", value: "linear-gradient(135deg, #e6dee9 0%, #fff8e7 100%)" },
+{ name: "Градиент: Теплый бетон", value: "linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)" },
+{ name: "Градиент: Молочный серый", value: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)" },
+{ name: "Градиент: Спокойствие", value: "linear-gradient(135deg, #c2e9fb 0%, #a1c4fd 100%)" },
+
+
+  // Фоны с изображением
+  {name: "Фон: Ткань", value: "url('https://www.transparenttextures.com/patterns/fabric-of-squares.png')"},
+  {name: "Фон: Бумага", value: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')"},
+  {name: "Фон: Кожа", value: "url('https://www.transparenttextures.com/patterns/leather.png')"},
+  {name: "Фон: Дерево", value: "url('https://www.transparenttextures.com/patterns/wood-pattern.png')"},
+  {name: "Фон: Геометрия", value: "url('https://www.transparenttextures.com/patterns/connected.png')"}
+];
+
+
+// --- Хелперы для списков ---
+function getCustomList(key, defaults) {
+  return JSON.parse(localStorage.getItem(key) || 'null') || defaults;
+}
+function setCustomList(key, list) {
+  localStorage.setItem(key, JSON.stringify(list));
+}
+function updateSelect(selectId, list) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '';
+  for (const [name, value] of Object.entries(list)) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (selectId === 'color-input') {
+      opt.style.background = value;
+      opt.style.color = '#222';
+    }
+    select.appendChild(opt);
+  }
+}
+function getColorHex(name) {
+  const colors = getCustomList('customColors', defaultColors);
+  return colors[name] || '#fff';
+}
+function updateColorSelect() { updateSelect('color-input', getCustomList('customColors', defaultColors)); }
+function updateBrandSelect() { updateSelect('brand-input', getCustomList('customBrands', defaultBrands)); }
+function updateCategorySelect() { updateSelect('category-input', getCustomList('customCategories', defaultCategories)); }
+function updateFabricSelect() { updateSelect('fabric-input', getCustomList('customFabrics', defaultFabrics)); }
+updateColorSelect(); updateBrandSelect(); updateCategorySelect(); updateFabricSelect();
+
+// --- Добавление новых значений через интерфейс ---
+document.getElementById('add-color-btn').onclick = () => document.getElementById('add-color-form').style.display = '';
+document.getElementById('cancel-color-btn').onclick = () => document.getElementById('add-color-form').style.display = 'none';
+document.getElementById('new-color-hex').oninput = function() { document.getElementById('new-color-hex-text').value = this.value; };
+document.getElementById('new-color-hex-text').oninput = function() { document.getElementById('new-color-hex').value = this.value; };
+document.getElementById('save-color-btn').onclick = function() {
+  const name = document.getElementById('new-color-name').value.trim();
+  const hex = document.getElementById('new-color-hex').value;
+  if (!name) return alert('Введите название цвета!');
+  const colors = getCustomList('customColors', defaultColors);
+  colors[name] = hex;
+  setCustomList('customColors', colors);
+  updateColorSelect();
+  document.getElementById('color-input').value = name;
+  document.getElementById('add-color-form').style.display = 'none';
+  document.getElementById('new-color-name').value = '';
+  updateAllThumbnailColorSelects();
+  if (!productPhotoImages.length) drawProductCard();
+};
+document.getElementById('add-brand-btn').onclick = () => document.getElementById('add-brand-form').style.display = '';
+document.getElementById('cancel-brand-btn').onclick = () => document.getElementById('add-brand-form').style.display = 'none';
+document.getElementById('save-brand-btn').onclick = function() {
+  const name = document.getElementById('new-brand-name').value.trim();
+  if (!name) return alert('Введите название бренда!');
+  const brands = getCustomList('customBrands', defaultBrands);
+  brands[name] = "";
+  setCustomList('customBrands', brands);
+  updateBrandSelect();
+  document.getElementById('brand-input').value = name;
+  document.getElementById('add-brand-form').style.display = 'none';
+  document.getElementById('new-brand-name').value = '';
+};
+document.getElementById('add-category-btn').onclick = () => document.getElementById('add-category-form').style.display = '';
+document.getElementById('cancel-category-btn').onclick = () => document.getElementById('add-category-form').style.display = 'none';
+document.getElementById('save-category-btn').onclick = function() {
+  const name = document.getElementById('new-category-name').value.trim();
+  if (!name) return alert('Введите название товара!');
+  const categories = getCustomList('customCategories', defaultCategories);
+  categories[name] = "";
+  setCustomList('customCategories', categories);
+  updateCategorySelect();
+  document.getElementById('category-input').value = name;
+  document.getElementById('add-category-form').style.display = 'none';
+  document.getElementById('new-category-name').value = '';
+};
+document.getElementById('add-fabric-btn').onclick = () => document.getElementById('add-fabric-form').style.display = '';
+document.getElementById('cancel-fabric-btn').onclick = () => document.getElementById('add-fabric-form').style.display = 'none';
+document.getElementById('save-fabric-btn').onclick = function() {
+  const name = document.getElementById('new-fabric-name').value.trim();
+  if (!name) return alert('Введите название ткани!');
+  const fabrics = getCustomList('customFabrics', defaultFabrics);
+  fabrics[name] = "";
+  setCustomList('customFabrics', fabrics);
+  updateFabricSelect();
+  document.getElementById('fabric-input').value = name;
+  document.getElementById('add-fabric-form').style.display = 'none';
+  document.getElementById('new-fabric-name').value = '';
+};
+
+// --- Глобальные переменные ---
+let productPhotoImages = [];
+let batchColors = [];
+let currentPhotoIdx = 0;
+let overlayPos = {x: 0, y: 0}; // смещение блока с текстом
+let overlayDrag = false;
+let overlayDragStart = {x: 0, y: 0};
+let overlayPosStart = {x: 0, y: 0};
+let selectedBg = ""; // hex или ""
+
+const canvas = document.getElementById('product-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- CANVAS и drag/scale ---
+let photoScale = 1;
+let photoOffset = {x: 0, y: 0};
+let isDragging = false, dragStart = {x:0, y:0}, photoStart = {x:0, y:0};
+
+
+// const loadedBrandLogos = {};
+
+// const brandLogoURLs = {
+//   "Nike": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg",
+//   "Adidas": "https://upload.wikimedia.org/wikipedia/commons/2/20/Adidas_Logo.svg",
+//   "Puma": "https://upload.wikimedia.org/wikipedia/ru/f/fd/Puma_logo.svg",
+//   "Reebok": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Reebok_2019_logo.svg",
+//   "Calvin Klein": "https://upload.wikimedia.org/wikipedia/commons/2/28/Calvin_klein_logo.svg",
+//   "Armani": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Emporio_Armani_logo.svg",
+//   "The North Face": "https://upload.wikimedia.org/wikipedia/commons/1/13/TheNorthFace_logo.svg"
+// };
+
+function setCanvasSize() {
+  canvas.width = 900;
+  canvas.height = 1600;
+  canvas.style.width = "300px";
+  canvas.style.height = "533px";
+}
+setCanvasSize();
+
+function resetPhotoTransform() {
+  photoScale = 1;
+  photoOffset = {x: 0, y: 0};
+}
+
+// --- Фон на канвасе ---
+function updateBgSelect() {
+  const sel = document.getElementById('bg-select');
+  sel.innerHTML = '';
+  backgrounds.forEach(bg => {
+    const opt = document.createElement('option');
+    opt.value = bg.value;
+    opt.textContent = bg.name;
+    sel.appendChild(opt);
+  });
+}
+updateBgSelect();
+
+document.getElementById('add-bg-btn').onclick = function() {
+  const sel = document.getElementById('bg-select');
+  selectedBg = sel.value;
+  drawProductCard();
+};
+
+// --- Drag блока с текстом (оверлей) ---
+canvas.addEventListener('mousedown', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.offsetX;
+  const my = e.offsetY;
+  // Проверяем, попал ли клик в область оверлея
+  const overlayRect = getOverlayRect();
+  if (
+    mx >= overlayRect.x && mx <= overlayRect.x + overlayRect.w &&
+    my >= overlayRect.y && my <= overlayRect.y + overlayRect.h
+  ) {
+    overlayDrag = true;
+    overlayDragStart = {x: mx, y: my};
+    overlayPosStart = {...overlayPos};
+    canvas.style.cursor = "move";
+    return;
+  }
+  // иначе — drag фото
+  if (!productPhotoImages[currentPhotoIdx]) return;
+  isDragging = true;
+  dragStart = {x: mx, y: my};
+  photoStart = {x: photoOffset.x, y: photoOffset.y};
+  canvas.style.cursor = "grabbing";
+});
+window.addEventListener('mousemove', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  if (overlayDrag) {
+    overlayPos.x = overlayPosStart.x + (mx - overlayDragStart.x);
+    overlayPos.y = overlayPosStart.y + (my - overlayDragStart.y);
+    drawProductCard();
+    return;
+  }
+  if (!isDragging) return;
+  photoOffset.x = photoStart.x + (mx - dragStart.x);
+  photoOffset.y = photoStart.y + (my - dragStart.y);
+  drawProductCard();
+});
+window.addEventListener('mouseup', function() {
+  overlayDrag = false;
+  isDragging = false;
+  canvas.style.cursor = "default";
+});
+canvas.addEventListener('wheel', function(e) {
+  if (!productPhotoImages[currentPhotoIdx]) return;
+  e.preventDefault();
+  let scale = photoScale;
+  if (e.deltaY < 0) scale *= 1.05;
+  else scale /= 1.05;
+  scale = Math.max(0.1, Math.min(10, scale));
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left);
+  const my = (e.clientY - rect.top);
+  const prev = {x: (mx - photoOffset.x) / photoScale, y: (my - photoOffset.y) / photoScale};
+  photoScale = scale;
+  photoOffset.x = mx - prev.x * photoScale;
+  photoOffset.y = my - prev.y * photoScale;
+  drawProductCard();
+}, {passive: false});
+
+// --- Множественная загрузка фото (добавляет к уже имеющимся) ---
+// 📌 Загрузка множества фото через input type="file"
+document.getElementById('product-photo-upload').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const defaultColor = document.getElementById('color-input').value;
+  let loaded = 0;
+  let startIdx = productPhotoImages.length;
+  files.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      let img = new window.Image();
+      img.onload = function() {
+        productPhotoImages[startIdx + idx] = img;
+        batchColors[startIdx + idx] = defaultColor;
+        loaded++;
+        if (loaded === files.length) {
+          currentPhotoIdx = productPhotoImages.length - 1;
+          drawProductCard();
+          updateThumbnails();
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+
+// --- Миниатюры и цвета ---
+function updateAllThumbnailColorSelects() {
+  document.querySelectorAll('.thumbnail-color-select').forEach(select => {
+    const current = select.value;
+    const colors = getCustomList('customColors', defaultColors);
+    select.innerHTML = '';
+    for (const [name, hex] of Object.entries(colors)) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      opt.style.background = hex;
+      select.appendChild(opt);
+    }
+    if (colors[current]) select.value = current;
+  });
+}
+function updateThumbnails() {
+  const thumbs = document.getElementById('thumbnails');
+  thumbs.innerHTML = '';
+  const colors = getCustomList('customColors', defaultColors);
+  productPhotoImages.forEach((img, idx) => {
+    const div = document.createElement('div');
+    div.className = 'batch-item';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.marginBottom = '8px';
+    div.style.border = idx === currentPhotoIdx ? '2px solid #1976d2' : '2px solid #ccc';
+    div.style.padding = '2px';
+    div.style.cursor = 'pointer';
+    div.onclick = () => { 
+      currentPhotoIdx = idx; 
+      updateThumbnails(); 
+      drawProductCard(); 
+    };
+
+    // Миниатюра
+    const thumbImg = document.createElement('img');
+    thumbImg.src = img.src;
+    thumbImg.width = 48;
+    thumbImg.height = 48;
+    thumbImg.style.objectFit = 'cover';
+    thumbImg.style.borderRadius = '8px';
+    thumbImg.style.border = '1.5px solid #444';
+    div.appendChild(thumbImg);
+
+    // Кружок цвета
+    const colorCircle = document.createElement('span');
+    colorCircle.className = 'color-circle';
+    colorCircle.style.background = getColorHex(batchColors[idx]);
+    colorCircle.style.marginLeft = '8px';
+    colorCircle.style.width = '22px';
+    colorCircle.style.height = '22px';
+    colorCircle.style.display = 'inline-block';
+    colorCircle.style.borderRadius = '50%';
+    colorCircle.style.border = '1.5px solid #444';
+    colorCircle.style.cursor = 'pointer';
+    colorCircle.title = 'Изменить цвет';
+
+    // Select для выбора цвета (по клику на кружок)
+    const colorSelect = document.createElement('select');
+    colorSelect.size = 8;
+    colorSelect.style.position = 'absolute';
+    colorSelect.style.display = 'none';
+    colorSelect.style.zIndex = 1000;
+    colorSelect.style.background = '#fff';
+    colorSelect.style.border = '1px solid #888';
+    colorSelect.style.fontSize = '14px';
+    colorSelect.className = 'color-select-popup thumbnail-color-select';
+    for (const [colorName, hex] of Object.entries(colors)) {
+      const opt = document.createElement('option');
+      opt.value = colorName;
+      opt.textContent = colorName;
+      opt.style.background = hex;
+      if (batchColors[idx] === colorName) opt.selected = true;
+      colorSelect.appendChild(opt);
+    }
+    colorSelect.onchange = (e) => { 
+      batchColors[idx] = e.target.value; 
+      colorCircle.style.background = getColorHex(e.target.value);
+      if (idx === currentPhotoIdx) drawProductCard(); 
+    };
+
+    colorCircle.onclick = function(ev) {
+      ev.stopPropagation();
+      document.querySelectorAll('.color-select-popup').forEach(sel => sel.style.display = 'none');
+      colorSelect.style.display = 'inline-block';
+      colorSelect.focus();
+    };
+    colorSelect.addEventListener('mousedown', function(ev) { ev.stopPropagation(); });
+    document.addEventListener('mousedown', function hideSelect(e) {
+      if (!div.contains(e.target)) colorSelect.style.display = 'none';
+    });
+
+    div.appendChild(colorCircle);
+    div.appendChild(colorSelect);
+
+    thumbs.appendChild(div);
+  });
+}
+
+// --- Размерный ряд по типу размера ---
+function getSizeRow() {
+  const type = (document.getElementById('size-type-input')?.value || '').toLowerCase();
+  if (type === 'норма') return 'M . L . XL . 2XL';
+  if (type === 'батал') return '2XL . 3XL . 3XL . 4XL';
+  if (type === 'оверсайз' || type === 'oversize') return 'S . M . L . XL . 2XL';
+  return '';
+}
+
+// --- Получить прямоугольник оверлея (для drag) ---
+function getOverlayRect() {
+  // Размер блока с текстом (примерно)
+  return {
+    x: 0 + overlayPos.x,
+    y: canvas.height-340 + overlayPos.y,
+    w: canvas.width,
+    h: 340
+  };
+}
+
+
+
+// 🎨 Основная функция отрисовки карточки
+function drawProductCard() {
+  setCanvasSize();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 🔳 Фон
+  if (selectedBg) {
+    if (selectedBg.startsWith('linear-gradient')) {
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      const stops = selectedBg.match(/#(?:[0-9a-f]{3}){1,2}|rgba?\([^)]+\)/gi);
+      if (stops && stops.length >= 2) {
+        gradient.addColorStop(0, stops[0]);
+        gradient.addColorStop(1, stops[1]);
+        ctx.fillStyle = gradient;
+      } else {
+        ctx.fillStyle = '#fff';
+      }
+    } else {
+      ctx.fillStyle = selectedBg;
+    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // 🖼 Фото товара
+  const img = productPhotoImages[currentPhotoIdx];
+  if (img) {
+    const w = canvas.width, h = canvas.height;
+    const cr = w / h, ir = img.width / img.height;
+    let drawW, drawH, dx, dy;
+    if (ir > cr) {
+      drawH = h * photoScale;
+      drawW = img.width * (drawH / img.height);
+      dx = (w - drawW) / 2 + photoOffset.x;
+      dy = photoOffset.y;
+    } else {
+      drawW = w * photoScale;
+      drawH = img.height * (drawW / img.width);
+      dx = photoOffset.x;
+      dy = (h - drawH) / 2 + photoOffset.y;
+    }
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+  } else {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // 🔰 Логотип бренда
+  const brand = document.getElementById('brand-input').value;
+  const logoImg = loadedBrandLogos[brand];
+  if (logoImg) {
+    const logoSize = 220;
+    ctx.drawImage(logoImg, canvas.width - logoSize - 20, 20, logoSize, logoSize);
+  }
+
+  // 💬 Текстовый блок
+  ctx.save();
+  ctx.translate(overlayPos.x, overlayPos.y);
+  ctx.fillStyle = "rgba(0,0,0,0.0)";
+  ctx.fillRect(0, canvas.height - 340, canvas.width, 340);
+
+  const leftX = 40;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#0a0a0a';
+
+  ctx.font = 'bold 54px Inter,Arial,sans-serif';
+  ctx.fillText(brand, leftX, canvas.height - 260);
+
+  ctx.font = '42px Inter,Arial,sans-serif';
+  ctx.fillText(document.getElementById('category-input').value, leftX, canvas.height - 200);
+
+  ctx.font = '32px Inter,Arial,sans-serif';
+  ctx.fillText('Тканина: ' + document.getElementById('fabric-input').value, leftX, canvas.height - 150);
+
+  const colorName = batchColors[currentPhotoIdx] || document.getElementById('color-input').value;
+  const colorHex = getColorHex(colorName);
+  const colorText = getColorUa(colorName);
+  const sizeRow = getSizeRow();
+
+  const circleY = canvas.height - 110;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(leftX + 18, circleY - 10, 18, 0, 2 * Math.PI);
+  ctx.fillStyle = colorHex;
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 3;
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.font = '32px Inter,Arial,sans-serif';
+  ctx.fillText('Колір:', leftX + 50, canvas.height - 100);
+  ctx.fillText(colorText, leftX + 160, canvas.height - 100);
+  ctx.fillText(sizeRow, leftX, canvas.height - 50);
+
+  ctx.font = '28px Inter,Arial,sans-serif';
+  ctx.fillText('Артикул: ' + document.getElementById('sku-input').value, leftX, canvas.height - 10);
+
+  ctx.restore();
+}
+
+// 🔁 Автообновление при вводе
+[
+  'brand-input',
+  'category-input',
+  'fabric-input',
+  'size-type-input',
+  'sku-input',
+  'color-input'
+].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('input', () => {
+      drawProductCard();
+      updateThumbnails();
+    });
+    if (el.type === "checkbox") {
+      el.addEventListener('change', () => {
+        drawProductCard();
+        updateThumbnails();
+      });
+    }
+  }
+});
+
+// 🎨 Обновление цвета миниатюр
+document.getElementById('color-input').addEventListener('change', function() {
+  batchColors[currentPhotoIdx] = this.value;
+  updateThumbnails();
+  drawProductCard();
+});
+
+// 💾 Скачать ZIP с карточками
+document.getElementById('save-btn').onclick = async function() {
+  if (!productPhotoImages.length) return alert('Нет фото!');
+  const zip = new JSZip();
+  for (let i = 0; i < productPhotoImages.length; i++) {
+    currentPhotoIdx = i;
+    drawProductCard(); // логотип уже отрисован, потому что загружен заранее
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+    zip.file(`card_${i + 1}.png`, base64, { base64: true });
+  }
+  const blob = await zip.generateAsync({ type: "blob" });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "cards.zip";
+  a.click();
+};
+
+// 🚀 При запуске страницы
+window.addEventListener('DOMContentLoaded', async function() {
+  await preloadBrandLogos(); // ← загрузка логотипов до первого рендера
+  drawProductCard();
+  updateThumbnails();
+});
+
+// 📷 Загрузка фото
+document.getElementById('product-photo-upload').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  let loaded = 0;
+  const startIdx = productPhotoImages.length;
+
+  files.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        productPhotoImages[startIdx + idx] = img;
+        loaded++;
+        if (loaded === files.length) {
+          currentPhotoIdx = productPhotoImages.length - 1;
+          drawProductCard();
+          updateThumbnails();
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  e.target.value = ''; // очистка input'а
+});
+
+
+
+
+
+</script>
+
+
+
+
+</body>
+</html>
