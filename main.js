@@ -1,22 +1,5 @@
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open('pwa-cache').then(cache => {
-      return cache.addAll([
-        '/',
-        '/index.html',
-        '/manifest.json',
-        '/icon-192.png',
-        '/icon-512.png',
-        // Добавь сюда свои скрипты и стили
-      ]);
-    })
-  );
-});
-
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
-});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(() => console.log('✅ Service Worker зарегистрирован'))
+    .catch(error => console.error('❌ Ошибка при регистрации:', error));
+}
